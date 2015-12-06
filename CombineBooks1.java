@@ -47,8 +47,17 @@ public class CombineBooks1 {
 					state = obj.getString("state");
 					category = obj.getJSONArray("categories");
 					cat = obj.getJSONArray("categories").toString();
+                    boolean restaurant = false;
 
-					context.write(new Text(state), new Text(cat));
+                    for (int j = 0; j < cat.length(); j++) {
+                        if (cat.get(j).toString().equals("Restaurant")) {
+                            restaurant = true;
+                        }
+                    }
+
+                    if (restaurant == true) {
+					    context.write(new Text(state), new Text(cat));
+                    }
 				}
 			} catch (JSONException e) {
 				e.printStackTrace();
