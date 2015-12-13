@@ -32,25 +32,35 @@ public class YelpDatasetChallenge {
 			try{
 				for(int i=0;i<tuple.length; i++){
 					JSONObject obj = new JSONObject(tuple[i]);
-					// Extracting buissness id example
+
+					// Extracting neighborhoods array
 					JSONArray neighborhoods = obj.getJSONArray("neighborhoods");
+
+                    // Extracting rating and review count
 					double rating = Double.parseDouble(obj.getString("stars"));
 					int reviewCount = Integer.parseInt(obj.getString("review_count")); 
+
+                    // Get the name of the restaurant
 					String name = obj.getString("name");
 					Double ratingValue = rating * (double) reviewCount;
 					
+                    // Gets the categories
 					JSONArray categories = obj.getJSONArray("categories");
 					
+                    // Combines categories into a  string so they can be put in
+                    // a StringWritable object
 					String cats = "";
 					for(int j = 0; j < categories.length(); j++){
 						cats = cats + categories.get(i).toString() + "~";
 					}
 					
-
+                    // Iterates though each neighborhood
 					for(int j = 0; j < neighborhoods.length(); j++) {
 						String neighborhood = neighborhoods.get(i).toString();
 						MapWritable mapValue = new MapWritable();
 
+                        // Only if rating is above a certain value will the restaurant be passed 
+                        // to the reducer
 						if (rating >= 4.0){
 							Text mapKey = new Text(neighborhood + "~" + ratingValue.toString());
 							mapValue.put(new IntWritable(0), new Text(name));
@@ -66,6 +76,7 @@ public class YelpDatasetChallenge {
 		}
 	}
 
+    /* Reduce task that writes the top restaurants in each neighborhood and classifies it */
 	public static class NeighborhoodReducer extends Reducer<Text,MapWritable,Text,Text> {
 		private IntWritable result = new IntWritable();
 		public void reduce(Text key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException {
@@ -74,7 +85,10 @@ public class YelpDatasetChallenge {
 			
 			String nhood = "";
 			
+            // Maps all the categoies into a hashmap
 			HashMap<String, Integer> hmap = new HashMap<String, Integer>();
+
+            // For each restaurant
 			for (MapWritable val : values) {
 				if (count++ >= count_max) {
 					break;
@@ -88,6 +102,7 @@ public class YelpDatasetChallenge {
 				//String x = rating + " " + reviewCount;
 				String[] arr = key.toString().split("~");
 				String x = arr[1] + " " + name;
+                // Write the restaurant to the text output
 				context.write(new Text(arr[0]), new Text(x));
 				nhood = arr[0];
 				
@@ -102,6 +117,7 @@ public class YelpDatasetChallenge {
 			}
 			
 			
+            // Finds the max category
 			String maxcat= "";
 			int max = -1;
 			for(String category: hmap.keySet()){
